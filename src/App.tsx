@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Container, Typography } from '@mui/material';
+import { CssBaseline } from '@mui/material';
 import { theme } from './theme';
 import { AuthProvider } from './contexts';
+import { Auth } from './pages';
 
-// Temporary placeholder components
-const Dashboard = () => <Typography variant="h4">Dashboard</Typography>;
-const Auth = () => <Typography variant="h4">Authentication</Typography>;
+// Temporary placeholder for Dashboard
+const Dashboard = () => <div>Dashboard - Coming Soon!</div>;
 
 function App() {
   return (
@@ -15,13 +15,11 @@ function App() {
       <CssBaseline />
       <Router>
         <AuthProvider>
-          <Container>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Container>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </AuthProvider>
       </Router>
     </ThemeProvider>

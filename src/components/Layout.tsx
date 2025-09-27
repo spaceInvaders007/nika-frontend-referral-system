@@ -26,6 +26,7 @@ import {
   Settings as SettingsIcon,
   Share as ShareIcon,
   Logout,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthProvider';
@@ -51,9 +52,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  };
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -118,9 +127,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
+           borderRadius: 0,
         }}
       >
         <Toolbar>
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Referral Dashboard
           </Typography>
@@ -192,13 +213,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         <Drawer
           variant={isMobile ? 'temporary' : 'permanent'}
+          open={isMobile ? mobileOpen : true}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile.
+          }}
           sx={{
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
               width: drawerWidth,
+              borderRadius: 0, 
             },
           }}
-          open={!isMobile}
         >
           {drawer}
         </Drawer>
@@ -212,7 +238,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         }}
       >
         <Toolbar />
-        <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Container maxWidth="xl" sx={{ py: { xs: 2, md: 3 }, px: { xs: 2, md: 3 } }}>
           {children}
         </Container>
       </Box>

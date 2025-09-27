@@ -162,37 +162,46 @@ export const apiService = {
   },
 
   getMe: async (): Promise<User> => {
-
     const token = localStorage.getItem('authToken');
     if (!token) throw new Error('No token found');
     
     try {
+      // Decode JWT to get basic user info
       const payload = JSON.parse(atob(token.split('.')[1]));
       console.log('🔍 getMe - decoded JWT payload:', payload);
+      
       if (payload.id && payload.email) {
-        const user = {
-          id: payload.id, 
-          email: payload.email,
-          referralCode: 'ABC12345',
-        };
-        return user;
+        // Get referral code from backend by calling the endpoint directly
+        try {
+          console.log('🔍 getMe - calling generateReferralCode to get current code...');
+          const response = await apiClient.post(API_CONFIG.ENDPOINTS.GENERATE_REFERRAL_CODE);
+          const referralResponse = response.data;
+          const user = {
+            id: payload.id, 
+            email: payload.email,
+            referralCode: referralResponse.data.referralCode,
+          };
+          console.log('🔍 getMe - user with referral code:', user);
+          return user;
+        } catch (referralError) {
+          console.warn('Failed to get referral code from backend:', referralError);
+          // Don't fallback to hardcoded code - throw error instead
+          throw new Error('Failed to get referral code from backend');
+        }
       }
     } catch (error) {
       console.warn('Failed to decode JWT token:', error);
     }
     
-    // Fallback to mock data with valid UUID format
-    const fallbackUser = {
-      id: '550e8400-e29b-41d4-a716-446655440000', 
-      email: 'user@example.com',
-      referralCode: 'ABC12345',
-    };
-    return fallbackUser;
+    // If we get here, something went wrong - throw error instead of returning hardcoded data
+    throw new Error('Failed to get user data');
   },
 
   // Referral
   generateReferralCode: async (): Promise<GenerateCodeResponse> => {
+    console.log('🔍 Calling generateReferralCode API...');
     const response = await apiClient.post(API_CONFIG.ENDPOINTS.GENERATE_REFERRAL_CODE);
+    console.log('🔍 generateReferralCode API response:', response.data);
     return response.data;
   },
 
@@ -217,22 +226,16 @@ export const apiService = {
 
   getUserStats: async (): Promise<UserStats> => {
     // Backend doesn't have user stats endpoint yet
-    // We'll derive stats from earnings data
+    // Return mock data to avoid circular dependency with getReferralEarnings
     try {
-      const earningsResponse = await apiService.getReferralEarnings();
-      const earnings = earningsResponse.data;
-      
-      const totalReferrals = earnings.earningsByLevel.level1.length + 
-                           earnings.earningsByLevel.level2.length + 
-                           earnings.earningsByLevel.level3.length;
-      const totalEarnings = parseFloat(earnings.totalEarned || '0');
-      
+      // In a real implementation, this would call a separate stats endpoint
+      // For now, return reasonable mock data
       return {
-        totalReferrals,
-        activeReferrals: totalReferrals, // Assume all are active for now
-        totalEarnings,
-        thisMonthEarnings: totalEarnings * 0.1, 
-        conversionRate: totalReferrals > 0 ? 0.85 : 0, 
+        totalReferrals: 28,
+        activeReferrals: 25, 
+        totalEarnings: 1247.50,
+        thisMonthEarnings: 387.20, 
+        conversionRate: 0.85, 
       };
     } catch {
       return {

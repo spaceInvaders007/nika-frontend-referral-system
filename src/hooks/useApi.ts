@@ -62,45 +62,59 @@ export const useLogout = () => {
 
 // User Hooks
 export const useUser = () => {
+  const token = localStorage.getItem('authToken');
+  
   return useQuery({
-    queryKey: [QUERY_KEYS.USER, localStorage.getItem('authToken')], // Include token in key to force refresh
+    queryKey: [QUERY_KEYS.USER],
     queryFn: () => apiService.getMe(),
-    enabled: !!localStorage.getItem('authToken'),
+    enabled: !!token,
     retry: false,
     // Don't throw errors, let AuthProvider handle them
     throwOnError: false,
-    // Force refetch to avoid stale cache
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    // Reasonable cache time to prevent excessive refetching
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
 export const useUserStats = () => {
+  const token = localStorage.getItem('authToken');
+  
   return useQuery({
     queryKey: [QUERY_KEYS.USER_STATS],
     queryFn: () => apiService.getUserStats(),
-    enabled: !!localStorage.getItem('authToken'),
+    enabled: !!token,
     retry: false,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 // Referral Hooks
 export const useReferralNetwork = (page = 1, limit = 10) => {
+  const token = localStorage.getItem('authToken');
+  
   return useQuery({
     queryKey: [QUERY_KEYS.REFERRAL_NETWORK, page, limit],
     queryFn: () => apiService.getReferralNetwork(page, limit),
-    enabled: !!localStorage.getItem('authToken'),
+    enabled: !!token,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 export const useReferralEarnings = (startDate?: string, endDate?: string) => {
+  const token = localStorage.getItem('authToken');
+  
   return useQuery({
     queryKey: [QUERY_KEYS.REFERRAL_EARNINGS, startDate, endDate],
     queryFn: () => apiService.getReferralEarnings(startDate, endDate),
-    enabled: !!localStorage.getItem('authToken'),
+    enabled: !!token,
     retry: false,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -111,8 +125,19 @@ export const useGenerateReferralCode = () => {
     mutationFn: () => apiService.generateReferralCode(),
     onSuccess: (response) => {
       console.log('Referral code generated:', response.data.referralCode);
-      // Invalidate user data to refetch with new referral code
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER] });
+      
+      // Update the user data in the cache with the referral code from backend
+      queryClient.setQueryData([QUERY_KEYS.USER], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            referralCode: response.data.referralCode,
+          };
+        }
+        return oldData;
+      });
+      
+      console.log('✅ User data updated with referral code:', response.data.referralCode);
     },
   });
 };

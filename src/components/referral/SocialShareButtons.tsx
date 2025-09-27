@@ -13,15 +13,16 @@ import {
 } from '@mui/icons-material';
 
 interface SocialShareButtonsProps {
-  url: string;
-  message?: string;
+  referralLink: string;
+  referralCode: string;
 }
 
 export const SocialShareButtons: React.FC<SocialShareButtonsProps> = ({ 
-  url, 
-  message = "Join me on this amazing referral program!" 
+  referralLink,
+  referralCode
 }) => {
-  const encodedUrl = encodeURIComponent(url);
+  const message = `Join me on Nika and start earning referral commissions! Use my code: ${referralCode}`;
+  const encodedUrl = encodeURIComponent(referralLink);
   const encodedMessage = encodeURIComponent(message);
 
   const shareLinks = [

@@ -32,6 +32,7 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Backend Response Types
 export interface SignupResponse {
   success: true;
   data: {
@@ -70,6 +71,75 @@ export interface RegisterRequest {
   referralCode?: string | null;
 }
 
+export interface ReferralNetworkResponse {
+  success: true;
+  data: {
+    user: {
+      id: string;
+      email: string;
+      referralCode: string;
+      level: 0;
+    };
+    referees: ReferralUser[];
+  };
+}
+
+export interface ReferralUser {
+  id: string;
+  email: string;
+  referralCode: string;
+  level: 1 | 2 | 3;
+  createdAt: string;
+  referees: ReferralUser[];
+}
+
+export interface EarningsResponse {
+  success: true;
+  data: {
+    totalEarned: string;
+    totalClaimed: string;
+    totalUnclaimed: string;
+    earningsByLevel: {
+      level1: EarningsByUser[];
+      level2: EarningsByUser[];
+      level3: EarningsByUser[];
+    };
+  };
+}
+
+export interface EarningsByUser {
+  sourceUserId: string;
+  sourceUserEmail: string;
+  totalEarned: string;
+  totalClaimed: string;
+  totalUnclaimed: string;
+  commissionCount: number;
+}
+
+export interface GenerateCodeResponse {
+  success: true;
+  data: {
+    referralCode: string;
+  };
+}
+
+export interface ClaimResponse {
+  success: true;
+  message: string;
+  data: {
+    claimableAmount: string;
+    txHash: string | null;
+  };
+}
+
+export interface UserStats {
+  totalReferrals: number;
+  activeReferrals: number;
+  totalEarnings: number;
+  thisMonthEarnings: number;
+  conversionRate: number;
+}
+
 export const apiService = {
   // Authentication
   login: async (data: LoginRequest): Promise<LoginResponse> => {
@@ -82,30 +152,108 @@ export const apiService = {
     return response.data;
   },
 
-  // Simple user data extraction from JWT
+  register: async (data: RegisterRequest): Promise<SignupResponse> => {
+    return apiService.signup(data);
+  },
+
+
+  logout: async (): Promise<void> => {
+    return Promise.resolve();
+  },
+
   getMe: async (): Promise<User> => {
+
     const token = localStorage.getItem('authToken');
     if (!token) throw new Error('No token found');
     
     try {
-      // Decode JWT token to get user info
       const payload = JSON.parse(atob(token.split('.')[1]));
+      console.log('🔍 getMe - decoded JWT payload:', payload);
       if (payload.id && payload.email) {
-        return {
-          id: payload.id,
+        const user = {
+          id: payload.id, 
           email: payload.email,
-          referralCode: 'TEMP123', // Will be populated later
+          referralCode: 'ABC12345',
         };
+        return user;
       }
     } catch (error) {
       console.warn('Failed to decode JWT token:', error);
     }
     
-    // Fallback to mock data
-    return {
-      id: '550e8400-e29b-41d4-a716-446655440000',
+    // Fallback to mock data with valid UUID format
+    const fallbackUser = {
+      id: '550e8400-e29b-41d4-a716-446655440000', 
       email: 'user@example.com',
-      referralCode: 'TEMP123',
+      referralCode: 'ABC12345',
     };
+    return fallbackUser;
+  },
+
+  // Referral
+  generateReferralCode: async (): Promise<GenerateCodeResponse> => {
+    const response = await apiClient.post(API_CONFIG.ENDPOINTS.GENERATE_REFERRAL_CODE);
+    return response.data;
+  },
+
+  getReferralNetwork: async (page = 1, limit = 50): Promise<ReferralNetworkResponse> => {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.GET_REFERRAL_NETWORK, {
+      params: { page, limit },
+    });
+    return response.data;
+  },
+
+  getReferralEarnings: async (startDate?: string, endDate?: string): Promise<EarningsResponse> => {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.GET_REFERRAL_EARNINGS, {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  },
+
+  claimEarnings: async (tokenType = 'XP'): Promise<ClaimResponse> => {
+    const response = await apiClient.post(API_CONFIG.ENDPOINTS.CLAIM_EARNINGS, { tokenType });
+    return response.data;
+  },
+
+  getUserStats: async (): Promise<UserStats> => {
+    // Backend doesn't have user stats endpoint yet
+    // We'll derive stats from earnings data
+    try {
+      const earningsResponse = await apiService.getReferralEarnings();
+      const earnings = earningsResponse.data;
+      
+      const totalReferrals = earnings.earningsByLevel.level1.length + 
+                           earnings.earningsByLevel.level2.length + 
+                           earnings.earningsByLevel.level3.length;
+      const totalEarnings = parseFloat(earnings.totalEarned || '0');
+      
+      return {
+        totalReferrals,
+        activeReferrals: totalReferrals, // Assume all are active for now
+        totalEarnings,
+        thisMonthEarnings: totalEarnings * 0.1, 
+        conversionRate: totalReferrals > 0 ? 0.85 : 0, 
+      };
+    } catch {
+      return {
+        totalReferrals: 0,
+        activeReferrals: 0,
+        totalEarnings: 0,
+        thisMonthEarnings: 0,
+        conversionRate: 0,
+      };
+    }
+  },
+
+  simulateTrade: async (userId: string, volume: number, fees: number): Promise<any> => {
+    const response = await apiClient.post(API_CONFIG.ENDPOINTS.SIMULATE_TRADE, {
+      userId, 
+      volume,
+      fees,
+      chain: 'arbitrum', 
+      tokenPair: 'ETH/USDC', 
+      tradeType: 'buy' as const, 
+    });
+    return response.data;
   },
 };

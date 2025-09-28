@@ -218,10 +218,8 @@ export const apiService = {
     return response.data;
   },
 
-  getReferralEarnings: async (startDate?: string, endDate?: string): Promise<EarningsResponse> => {
-    const response = await apiClient.get(API_CONFIG.ENDPOINTS.GET_REFERRAL_EARNINGS, {
-      params: { startDate, endDate },
-    });
+  getReferralEarnings: async (): Promise<EarningsResponse> => {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.GET_REFERRAL_EARNINGS);
     return response.data;
   },
 

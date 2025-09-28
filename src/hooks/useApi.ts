@@ -99,12 +99,12 @@ export const useReferralNetwork = (page = 1, limit = 10) => {
   });
 };
 
-export const useReferralEarnings = (startDate?: string, endDate?: string) => {
+export const useReferralEarnings = () => {
   const token = localStorage.getItem('authToken');
   
   return useQuery({
-    queryKey: [QUERY_KEYS.REFERRAL_EARNINGS, startDate, endDate],
-    queryFn: () => apiService.getReferralEarnings(startDate, endDate),
+    queryKey: [QUERY_KEYS.REFERRAL_EARNINGS],
+    queryFn: () => apiService.getReferralEarnings(),
     enabled: !!token,
     retry: false,
     staleTime: 2 * 60 * 1000, // 2 minutes

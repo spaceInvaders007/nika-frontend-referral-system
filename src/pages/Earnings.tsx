@@ -37,8 +37,6 @@ import {
   Refresh as RefreshIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useReferralEarnings, useClaimEarnings } from '../hooks/useApi';
 import { EarningsByUser } from '../services/api';
 
@@ -109,15 +107,10 @@ const ClaimDialog: React.FC<ClaimDialogProps> = ({ open, onClose, unclaimedAmoun
 };
 
 export const Earnings: React.FC = () => {
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
 
-  const startDateStr = startDate?.toISOString().split('T')[0];
-  const endDateStr = endDate?.toISOString().split('T')[0];
-
-  const { data: earningsData, isLoading, error, refetch } = useReferralEarnings(startDateStr, endDateStr);
+  const { data: earningsData, isLoading, error, refetch } = useReferralEarnings();
 
   // Debug logging
 
@@ -152,8 +145,6 @@ export const Earnings: React.FC = () => {
   };
 
   const clearFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
     setLevelFilter('all');
   };
 
@@ -221,8 +212,7 @@ export const Earnings: React.FC = () => {
   const filteredEarnings = getFilteredEarnings();
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
+    <Box>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" gutterBottom>
             Earnings Dashboard 💰
@@ -348,22 +338,10 @@ export const Earnings: React.FC = () => {
           <CardContent>
             <Box sx={{ 
               display: 'grid', 
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
               gap: 3,
               alignItems: 'center'
             }}>
-              <DatePicker
-                label="Start Date"
-                value={startDate}
-                onChange={setStartDate}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-              />
-              <DatePicker
-                label="End Date"
-                value={endDate}
-                onChange={setEndDate}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-              />
               <TextField
                 select
                 label="Level Filter"
@@ -400,7 +378,7 @@ export const Earnings: React.FC = () => {
                   No earnings breakdown found
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {levelFilter !== 'all' || startDate || endDate
+                  {levelFilter !== 'all'
                     ? 'Try adjusting your filters'
                     : 'You need referrals to see individual earnings breakdown. The table shows earnings from users you referred.'
                   }
@@ -433,7 +411,7 @@ export const Earnings: React.FC = () => {
                       
 
                       return (
-                        <TableRow key={earning.sourceUserId} hover>
+                        <TableRow key={`${earning.sourceUserId}-${index}-${earning.level}`} hover>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                               <Avatar sx={{ width: 32, height: 32 }}>
@@ -508,6 +486,5 @@ export const Earnings: React.FC = () => {
           unclaimedAmount={totalUnclaimed}
         />
       </Box>
-    </LocalizationProvider>
   );
 };

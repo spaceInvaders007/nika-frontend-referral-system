@@ -1,46 +1,115 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Referral System Frontend
 
-## Available Scripts
+A React-based frontend for a commission-based referral system with 3-level cascade structure, custom user types, and real-time earnings tracking.
 
-In the project directory, you can run:
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Backend API running on `http://localhost:3000`
+
+### Installation & Setup
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start the development server:**
+   ```bash
+   npm start
+   ```
+
+3. **Open your browser:**
+   Navigate to [http://localhost:3001](http://localhost:3001)
+
+## 📋 Available Scripts
 
 ### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Runs the app in development mode on port 3001.\
+The page will reload automatically when you make changes.\
+You'll see lint errors in the console.
 
 ### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Launches the test runner in interactive watch mode.\
+Run `npm test -- --watchAll=false` for a single test run.
 
 ### `npm run build`
-
 Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The build is optimized for best performance.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🏗️ Project Structure
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+src/
+├── components/          # Reusable UI components
+│   ├── auth/           # Login/Register forms
+│   ├── dashboard/      # Dashboard components
+│   └── referral/       # Referral-specific components
+├── pages/              # Main application pages
+│   ├── Dashboard.tsx   # Main dashboard
+│   ├── Network.tsx     # Referral network visualization
+│   ├── Earnings.tsx    # Earnings breakdown
+│   └── Settings.tsx    # User settings
+├── services/           # API integration
+├── hooks/              # Custom React hooks
+├── utils/              # Utility functions
+└── contexts/           # React contexts
+```
 
-### `npm run eject`
+## 🔧 Configuration
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### Backend API
+The frontend expects the backend API to be running on `http://localhost:3000`. Update the API base URL in `src/config/api.ts` if needed.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Environment Variables
+Create a `.env.local` file in the root directory:
+```env
+REACT_APP_API_BASE_URL=http://localhost:3000
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 🧪 Testing
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Run All Tests
+```bash
+npm test -- --watchAll=false
+```
 
-## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🚀 Production Build
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+To create a production build:
+```bash
+npm run build
+```
+
+The build artifacts will be stored in the `build/` directory and can be served with any static file server.
+
+## 📚 Documentation
+
+- [Testing Guide](TESTING_GUIDE.md) - Comprehensive testing instructions
+- [Design Decisions](DESIGN_DECISIONS.md) - Architecture and design rationale
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **Port 3001 already in use:**
+   ```bash
+   # Kill process on port 3001
+   lsof -ti:3001 | xargs kill -9
+   ```
+
+2. **API connection errors:**
+   - Ensure backend is running on port 3000
+   - Check API base URL in configuration
+
+3. **Build errors:**
+   ```bash
+   # Clear cache and reinstall
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+

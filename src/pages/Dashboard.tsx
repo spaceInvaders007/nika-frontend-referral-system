@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Button } from '@mui/material';
 import {
   People as PeopleIcon,
   AttachMoney as MoneyIcon,
@@ -16,17 +16,19 @@ import { ApiTester } from '../components/dev/ApiTester';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { data: userStats, isLoading: statsLoading } = useUserStats();
-  const { data: earningsData, isLoading: earningsLoading } = useReferralEarnings();
+  const { data: userStats, isLoading: statsLoading, refetch: refetchStats } = useUserStats();
+  const { data: earningsData, isLoading: earningsLoading, refetch: refetchEarnings } = useReferralEarnings();
 
-  // Use real API data or fallback to mock data
-  // Backend returns earnings as { success: true, data: { totalEarned, totalClaimed, totalUnclaimed, ... } }
+  // Use only real API data - no mock data fallbacks
   const stats = {
-    totalEarnings: earningsData?.data ? parseFloat(earningsData.data.totalEarned || '0') : 1247.50,
-    totalReferrals: userStats?.totalReferrals || 28,
-    thisMonthEarnings: userStats?.thisMonthEarnings || 387.20,
-    pendingClaims: earningsData?.data ? parseFloat(earningsData.data.totalUnclaimed || '0') : 156.80,
+    // Use real earnings data from API
+    totalEarnings: earningsData?.data ? parseFloat(earningsData.data.totalEarned || '0') : 0,
+    totalReferrals: userStats?.totalReferrals || 0,
+    thisMonthEarnings: userStats?.thisMonthEarnings || 0,
+    pendingClaims: earningsData?.data ? parseFloat(earningsData.data.totalUnclaimed || '0') : 0,
   };
+
+  // Debug logging to see what data we're getting
 
   const isLoading = statsLoading || earningsLoading;
 
@@ -43,12 +45,26 @@ export const Dashboard: React.FC = () => {
   return (
     <Box>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Welcome back, {user?.name}! 👋
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Here's an overview of your referral performance and earnings
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Welcome back, {user?.name}! 👋
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Here's an overview of your referral performance and earnings
+            </Typography>
+          </Box>
+          <Button 
+            variant="outlined" 
+            onClick={() => {
+              refetchStats();
+              refetchEarnings();
+            }}
+            sx={{ ml: 2 }}
+          >
+            Refresh Data
+          </Button>
+        </Box>
       </Box>
 
       {/* Development API Tester */}

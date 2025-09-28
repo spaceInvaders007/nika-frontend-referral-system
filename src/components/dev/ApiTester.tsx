@@ -16,30 +16,60 @@ export const ApiTester: React.FC = () => {
   const { user } = useAuth();
   const [volume, setVolume] = useState('1000');
   const [fees, setFees] = useState('10');
+  const [testUserId, setTestUserId] = useState('');
   const [testResult, setTestResult] = useState<string>('');
 
   const simulateTradeMutation = useSimulateTrade();
   const { refetch: refetchStats } = useUserStats();
   const { refetch: refetchEarnings } = useReferralEarnings();
 
+  const isValidUUID = (uuid: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
+
   const handleSimulateTrade = async () => {
     if (!user) return;
     
-    console.log('🧪 Trade simulation - User ID:', user.id);
-    console.log('🧪 Trade simulation - Full user object:', user);
+    const userIdToUse = testUserId.trim() || user.id;
+    
+    // Validate UUID format
+    if (!isValidUUID(userIdToUse)) {
+      setTestResult(`❌ Invalid UUID format: ${userIdToUse}\nUUIDs must be 36 characters in format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`);
+      return;
+    }
+    
     
     try {
-      await simulateTradeMutation.mutateAsync({
-        userId: user.id,
+      const result = await simulateTradeMutation.mutateAsync({
+        userId: userIdToUse,
         volume: parseFloat(volume),
         fees: parseFloat(fees),
       });
-      setTestResult(`Trade simulated successfully! Used userId: ${user.id}`);
+      setTestResult(`Trade simulated successfully! Used userId: ${userIdToUse}\nResult: ${JSON.stringify(result, null, 2)}`);
       // Refresh data
       refetchStats();
       refetchEarnings();
-    } catch (error) {
-      setTestResult(`Failed to simulate trade with userId ${user.id}: ` + (error as Error).message);
+    } catch (error: any) {
+      console.error('🧪 Trade simulation error:', error);
+      console.error('🧪 Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+      
+      let errorMessage = `Failed to simulate trade with userId ${userIdToUse}: `;
+      if (error.response?.status === 500) {
+        errorMessage += `Server Error (500) - Check backend logs. `;
+        if (error.response?.data?.message) {
+          errorMessage += `Backend message: ${error.response.data.message}`;
+        }
+      } else {
+        errorMessage += error.message;
+      }
+      
+      setTestResult(errorMessage);
     }
   };
 
@@ -53,6 +83,31 @@ export const ApiTester: React.FC = () => {
       }
     } catch (error) {
       setTestResult('❌ Cannot connect to backend API. Make sure it\'s running on port 3000.\n\n🔧 For now, the frontend is using mock data so you can test all features!');
+    }
+  };
+
+  const testUserIdExists = async () => {
+    if (!testUserId.trim()) {
+      setTestResult('❌ Please enter a User ID to test');
+      return;
+    }
+    
+    try {
+      // Try to get referral network for this user to see if they exist
+      const response = await fetch(`http://localhost:3000/api/referral/network?page=1&limit=1`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        setTestResult(`✅ User ID ${testUserId} appears to be valid (API responded successfully)`);
+      } else {
+        setTestResult(`❌ User ID ${testUserId} may not exist (API returned ${response.status})`);
+      }
+    } catch (error) {
+      setTestResult(`❌ Error testing User ID ${testUserId}: ${(error as Error).message}`);
     }
   };
 
@@ -82,6 +137,10 @@ export const ApiTester: React.FC = () => {
           <Button variant="outlined" onClick={() => refetchEarnings()}>
             Refresh Earnings
           </Button>
+          
+          <Button variant="outlined" onClick={testUserIdExists}>
+            Test User ID
+          </Button>
         </Box>
 
         <Divider sx={{ mb: 3 }} />
@@ -105,6 +164,14 @@ export const ApiTester: React.FC = () => {
             size="small"
             type="number"
             sx={{ width: 120 }}
+          />
+          <TextField
+            label="Test User ID (optional)"
+            value={testUserId}
+            onChange={(e) => setTestUserId(e.target.value)}
+            size="small"
+            placeholder="Leave empty to use your ID"
+            sx={{ width: 200 }}
           />
           <Button
             variant="contained"

@@ -119,6 +119,8 @@ export const Earnings: React.FC = () => {
 
   const { data: earningsData, isLoading, error, refetch } = useReferralEarnings(startDateStr, endDateStr);
 
+  // Debug logging
+
   const handleExport = () => {
     if (!earningsData?.data) return;
 
@@ -129,12 +131,12 @@ export const Earnings: React.FC = () => {
       users.forEach((user: EarningsByUser) => {
         csvData.push([
           level.replace('level', ''),
-          user.sourceUserEmail,
+          user.sourceEmail || user.sourceUserEmail || '',
           user.sourceUserId,
-          user.totalEarned,
-          user.totalClaimed,
-          user.totalUnclaimed,
-          user.commissionCount.toString(),
+          user.xpAmount || user.totalEarned || '0',
+          user.totalClaimed || '0',
+          user.xpAmount || user.totalUnclaimed || '0',
+          (user.commissionCount || 0).toString(),
         ]);
       });
     });
@@ -184,9 +186,18 @@ export const Earnings: React.FC = () => {
   }
 
   const earnings = earningsData?.data;
-  const totalEarned = parseFloat(earnings?.totalEarned || '0');
-  const totalClaimed = parseFloat(earnings?.totalClaimed || '0');
-  const totalUnclaimed = parseFloat(earnings?.totalUnclaimed || '0');
+  
+  // Safe parsing with fallback to 0
+  const parseEarningsValue = (value: any): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+  
+  const totalEarned = parseEarningsValue(earnings?.totalEarned);
+  const totalClaimed = parseEarningsValue(earnings?.totalClaimed);
+  const totalUnclaimed = parseEarningsValue(earnings?.totalUnclaimed);
+  
 
   // Filter earnings by level
   const getFilteredEarnings = () => {
@@ -196,6 +207,7 @@ export const Earnings: React.FC = () => {
     
     Object.entries(earnings.earningsByLevel).forEach(([level, users]) => {
       const levelNum = parseInt(level.replace('level', ''));
+      
       if (levelFilter === 'all' || levelFilter === levelNum.toString()) {
         users.forEach(user => {
           allEarnings.push({ ...user, level: levelNum });
@@ -203,7 +215,7 @@ export const Earnings: React.FC = () => {
       }
     });
     
-    return allEarnings.sort((a, b) => parseFloat(b.totalEarned) - parseFloat(a.totalEarned));
+    return allEarnings.sort((a, b) => parseEarningsValue(b.totalEarned) - parseEarningsValue(a.totalEarned));
   };
 
   const filteredEarnings = getFilteredEarnings();
@@ -385,13 +397,16 @@ export const Earnings: React.FC = () => {
               <Box sx={{ textAlign: 'center', py: 6 }}>
                 <MoneyIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                 <Typography variant="h6" gutterBottom>
-                  No earnings data found
+                  No earnings breakdown found
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {levelFilter !== 'all' || startDate || endDate
                     ? 'Try adjusting your filters'
-                    : 'Start referring users to see earnings here'
+                    : 'You need referrals to see individual earnings breakdown. The table shows earnings from users you referred.'
                   }
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  💡 <strong>Tip:</strong> To see earnings here, you need to refer other users, then simulate trades for those referred users.
                 </Typography>
               </Box>
             ) : (
@@ -409,11 +424,13 @@ export const Earnings: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredEarnings.map((earning) => {
-                      const earned = parseFloat(earning.totalEarned);
-                      const claimed = parseFloat(earning.totalClaimed);
-                      const unclaimed = parseFloat(earning.totalUnclaimed);
+                    {filteredEarnings.map((earning, index) => {
+                      // Handle the actual backend data structure
+                      const earned = parseEarningsValue(earning.xpAmount || earning.totalEarned);
+                      const claimed = parseEarningsValue(earning.totalClaimed || '0');
+                      const unclaimed = parseEarningsValue(earning.xpAmount || earning.totalUnclaimed);
                       const hasUnclaimed = unclaimed > 0;
+                      
 
                       return (
                         <TableRow key={earning.sourceUserId} hover>
@@ -424,7 +441,7 @@ export const Earnings: React.FC = () => {
                               </Avatar>
                               <Box>
                                 <Typography variant="body2" fontWeight="medium">
-                                  {earning.sourceUserEmail}
+                                  {earning.sourceEmail || earning.sourceUserEmail}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   ID: {earning.sourceUserId.slice(0, 8)}...
@@ -460,11 +477,15 @@ export const Earnings: React.FC = () => {
                           </TableCell>
                           <TableCell align="right">
                             <Typography variant="body2">
-                              {earning.commissionCount}
+                              {earning.commissionCount || 0}
                             </Typography>
                           </TableCell>
                           <TableCell align="right">
-                            {hasUnclaimed ? (
+                            {earning.status === 'pending' ? (
+                              <Chip label="Pending" color="warning" size="small" />
+                            ) : earning.status === 'claimed' ? (
+                              <Chip label="Claimed" color="success" size="small" />
+                            ) : hasUnclaimed ? (
                               <Chip label="Claimable" color="warning" size="small" />
                             ) : (
                               <Chip label="Claimed" color="success" size="small" />

@@ -109,11 +109,15 @@ export interface EarningsResponse {
 
 export interface EarningsByUser {
   sourceUserId: string;
-  sourceUserEmail: string;
-  totalEarned: string;
-  totalClaimed: string;
-  totalUnclaimed: string;
-  commissionCount: number;
+  sourceUserEmail?: string;  // Optional for backward compatibility
+  sourceEmail?: string;      // Actual field from backend
+  totalEarned?: string;      // Optional for backward compatibility
+  totalClaimed?: string;     // Optional for backward compatibility
+  totalUnclaimed?: string;   // Optional for backward compatibility
+  xpAmount?: string;         // Actual field from backend
+  status?: string;           // Actual field from backend
+  commissionCount?: number;
+  createdAt?: string;        // Actual field from backend
 }
 
 export interface GenerateCodeResponse {
@@ -168,12 +172,10 @@ export const apiService = {
     try {
       // Decode JWT to get basic user info
       const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('🔍 getMe - decoded JWT payload:', payload);
       
       if (payload.id && payload.email) {
         // Get referral code from backend by calling the endpoint directly
         try {
-          console.log('🔍 getMe - calling generateReferralCode to get current code...');
           const response = await apiClient.post(API_CONFIG.ENDPOINTS.GENERATE_REFERRAL_CODE);
           const referralResponse = response.data;
           const user = {
@@ -181,7 +183,6 @@ export const apiService = {
             email: payload.email,
             referralCode: referralResponse.data.referralCode,
           };
-          console.log('🔍 getMe - user with referral code:', user);
           return user;
         } catch (referralError) {
           console.warn('Failed to get referral code from backend:', referralError);
@@ -199,9 +200,7 @@ export const apiService = {
 
   // Referral
   generateReferralCode: async (): Promise<GenerateCodeResponse> => {
-    console.log('🔍 Calling generateReferralCode API...');
     const response = await apiClient.post(API_CONFIG.ENDPOINTS.GENERATE_REFERRAL_CODE);
-    console.log('🔍 generateReferralCode API response:', response.data);
     return response.data;
   },
 
@@ -225,19 +224,35 @@ export const apiService = {
   },
 
   getUserStats: async (): Promise<UserStats> => {
-    // Backend doesn't have user stats endpoint yet
-    // Return mock data to avoid circular dependency with getReferralEarnings
+    // Get real data from the referral network and earnings APIs
     try {
-      // In a real implementation, this would call a separate stats endpoint
-      // For now, return reasonable mock data
+      // Get referral network data to count referrals
+      const networkResponse = await apiClient.get(API_CONFIG.ENDPOINTS.GET_REFERRAL_NETWORK, {
+        params: { page: 1, limit: 1000 }, // Get all referrals
+      });
+      const networkData = networkResponse.data;
+      
+      // Get earnings data for total earnings
+      const earningsResponse = await apiClient.get(API_CONFIG.ENDPOINTS.GET_REFERRAL_EARNINGS);
+      const earningsData = earningsResponse.data;
+      
+      const totalReferrals = networkData?.data?.referees?.length || 0;
+      const totalEarnings = earningsData?.data ? parseFloat(earningsData.data.totalEarned || '0') : 0;
+      
+      // For now, assume all earnings are from this month since we don't have historical data
+      // In a real system, you'd have separate endpoints for monthly vs total earnings
+      const thisMonthEarnings = totalEarnings;
+      
+      
       return {
-        totalReferrals: 28,
-        activeReferrals: 25, 
-        totalEarnings: 1247.50,
-        thisMonthEarnings: 387.20, 
-        conversionRate: 0.85, 
+        totalReferrals,
+        activeReferrals: totalReferrals, // Assume all are active for now
+        totalEarnings,
+        thisMonthEarnings,
+        conversionRate: totalReferrals > 0 ? 0.85 : 0, // Only show conversion rate if there are referrals
       };
-    } catch {
+    } catch (error) {
+      console.warn('Failed to get real user stats, returning zeros:', error);
       return {
         totalReferrals: 0,
         activeReferrals: 0,

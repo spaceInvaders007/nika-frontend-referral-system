@@ -14,11 +14,8 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: (data: LoginRequest) => apiService.login(data),
     onSuccess: (response: LoginResponse) => {
-      console.log('useLogin onSuccess, response:', response);
       if (response.success && response.data.token) {
-        console.log('useLogin saving token:', response.data.token);
         localStorage.setItem('authToken', response.data.token);
-        console.log('Token saved successfully:', localStorage.getItem('authToken'));
       } else {
         console.error('No token in response!', response);
       }
@@ -33,11 +30,8 @@ export const useRegister = () => {
   return useMutation({
     mutationFn: (data: RegisterRequest) => apiService.signup(data),
     onSuccess: (response: SignupResponse) => {
-      console.log('useRegister onSuccess, response:', response);
       if (response.success && response.data.token) {
-        console.log('useRegister saving token:', response.data.token);
         localStorage.setItem('authToken', response.data.token);
-        console.log('Token saved successfully:', localStorage.getItem('authToken'));
       } else {
         console.error('No token in response!', response);
       }
@@ -123,22 +117,18 @@ export const useGenerateReferralCode = () => {
   
   return useMutation({
     mutationFn: () => apiService.generateReferralCode(),
-    onSuccess: (response) => {
-      console.log('Referral code generated:', response.data.referralCode);
-      
-      // Update the user data in the cache with the referral code from backend
-      queryClient.setQueryData([QUERY_KEYS.USER], (oldData: any) => {
-        if (oldData) {
-          return {
-            ...oldData,
-            referralCode: response.data.referralCode,
-          };
-        }
-        return oldData;
-      });
-      
-      console.log('✅ User data updated with referral code:', response.data.referralCode);
-    },
+        onSuccess: (response) => {
+          // Update the user data in the cache with the referral code from backend
+          queryClient.setQueryData([QUERY_KEYS.USER], (oldData: any) => {
+            if (oldData) {
+              return {
+                ...oldData,
+                referralCode: response.data.referralCode,
+              };
+            }
+            return oldData;
+          });
+        },
   });
 };
 
@@ -148,7 +138,6 @@ export const useClaimEarnings = () => {
   return useMutation({
     mutationFn: (tokenType?: string) => apiService.claimEarnings(tokenType || 'XP'),
     onSuccess: (response) => {
-      console.log('Earnings claimed:', response.data);
       // Invalidate earnings and stats to refetch updated data
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.REFERRAL_EARNINGS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_STATS] });
@@ -164,10 +153,15 @@ export const useSimulateTrade = () => {
     mutationFn: ({ userId, volume, fees }: { userId: string; volume: number; fees: number }) =>
       apiService.simulateTrade(userId, volume, fees),
     onSuccess: (response) => {
-      console.log('Trade simulated:', response);
       // Invalidate all relevant data after simulating a trade
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.REFERRAL_EARNINGS] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_STATS] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.REFERRAL_NETWORK] });
+      
+      // Force refetch all data immediately
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.REFERRAL_EARNINGS] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.USER_STATS] });
+      queryClient.refetchQueries({ queryKey: [QUERY_KEYS.REFERRAL_NETWORK] });
     },
   });
 };

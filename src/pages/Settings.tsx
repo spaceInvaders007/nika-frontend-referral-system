@@ -75,7 +75,6 @@ export const Settings: React.FC = () => {
   });
 
   const handleSaveProfile = () => {
-    console.log('Saving profile:', profileData);
     setIsEditing(false);
   };
 
@@ -88,7 +87,6 @@ export const Settings: React.FC = () => {
   };
 
   const handleDeleteAccount = () => {
-    console.log('Account deletion requested');
     setDeleteDialogOpen(false);
     logout();
   };

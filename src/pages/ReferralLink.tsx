@@ -27,13 +27,15 @@ import {
   Check as CheckIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthProvider';
-import { useGenerateReferralCode } from '../hooks/useApi';
+import { useGenerateReferralCode, useUserStats, useReferralEarnings } from '../hooks/useApi';
 import { QRCodeComponent } from '../components/referral/QRCodeComponent';
 import { SocialShareButtons } from '../components/referral/SocialShareButtons';
 
 export const ReferralLink: React.FC = () => {
   const { user, isLoading: userLoading } = useAuth();
   const generateCodeMutation = useGenerateReferralCode();
+  const { data: userStats, isLoading: statsLoading } = useUserStats();
+  const { isLoading: earningsLoading } = useReferralEarnings();
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
@@ -65,11 +67,17 @@ export const ReferralLink: React.FC = () => {
     url: referralLink,
   };
 
+  // Calculate real stats from API data
+  const totalReferrals = userStats?.totalReferrals || 0;
+  const activeReferrals = userStats?.activeReferrals || 0;
+  const totalEarnings = userStats?.totalEarnings || 0;
+  const thisMonthEarnings = userStats?.thisMonthEarnings || 0;
+
   const referralStats = [
-    { label: 'Total Referrals', value: '28', icon: '👥' },
-    { label: 'Active Referrals', value: '25', icon: '✅' },
-    { label: 'Total Earnings', value: '$1,247.50', icon: '💰' },
-    { label: 'This Month', value: '$387.20', icon: '📈' },
+    { label: 'Total Referrals', value: totalReferrals.toString(), icon: '👥' },
+    { label: 'Active Referrals', value: activeReferrals.toString(), icon: '✅' },
+    { label: 'Total Earnings', value: `$${totalEarnings.toFixed(2)}`, icon: '💰' },
+    { label: 'This Month', value: `$${thisMonthEarnings.toFixed(2)}`, icon: '📈' },
   ];
 
   const commissionRates = [
@@ -78,7 +86,7 @@ export const ReferralLink: React.FC = () => {
     { level: 'Level 3', rate: '2%', description: 'From third-level referrals' },
   ];
 
-  if (userLoading) {
+  if (userLoading || statsLoading || earningsLoading) {
     return (
       <Box>
         <Typography variant="h4" gutterBottom>

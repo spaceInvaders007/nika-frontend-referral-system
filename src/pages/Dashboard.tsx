@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, Box, Button } from '@mui/material';
+import { Typography, Box, Button, Card, CardContent, Avatar } from '@mui/material';
 import {
   People as PeopleIcon,
   AttachMoney as MoneyIcon,
@@ -110,6 +110,29 @@ export const Dashboard: React.FC = () => {
           color="warning"
         />
       </Box>
+
+      {/* Cashback Information */}
+      {user?.cashbackPercentage && user.cashbackPercentage > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Card sx={{ bgcolor: 'success.50', border: 2, borderColor: 'success.main' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'success.main' }}>
+                  <TrendingUpIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" color="success.main">
+                    🎉 You're Earning Cashback!
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    You receive <strong>{(user.cashbackPercentage * 100).toFixed(1)}% of your trading fees back as cashback</strong> thanks to your referrer!
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
 
       <Box 
         sx={{ 

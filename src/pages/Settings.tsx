@@ -232,6 +232,30 @@ export const Settings: React.FC = () => {
                   </CardContent>
                 </Card>
 
+                <Card variant="outlined" sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Cashback Benefits
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Trading Fee Cashback:
+                      </Typography>
+                      <Chip 
+                        label={`${((user?.cashbackPercentage || 0) * 100).toFixed(1)}%`}
+                        color={user?.cashbackPercentage ? "success" : "default"}
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {user?.cashbackPercentage 
+                        ? "You receive 10% of your trading fees back as cashback thanks to your referrer!"
+                        : "Sign up with a referral code to get 10% of your trading fees back as cashback."
+                      }
+                    </Typography>
+                  </CardContent>
+                </Card>
+
                 <Alert severity="info">
                   <Typography variant="body2">
                     Your referral code is unique and permanent. Once generated, it cannot be changed.

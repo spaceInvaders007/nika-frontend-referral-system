@@ -116,7 +116,7 @@ const NetworkNode: React.FC<NetworkNodeProps> = ({
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <TreeIcon fontSize="small" />
                     <Typography variant="body2">
-                      {user.referees.length} referral{user.referees.length !== 1 ? 's' : ''}
+                      {user.referees?.length || 0} referral{(user.referees?.length || 0) !== 1 ? 's' : ''}
                     </Typography>
                   </Box>
                 )}
@@ -141,7 +141,7 @@ const NetworkNode: React.FC<NetworkNodeProps> = ({
 
         <Collapse in={isExpanded && hasChildren}>
           <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-            {user.referees.map((referee) => (
+            {user.referees?.map((referee) => (
               <NetworkNode
                 key={referee.id}
                 user={referee}
@@ -150,7 +150,7 @@ const NetworkNode: React.FC<NetworkNodeProps> = ({
                 onToggleExpand={onToggleExpand}
                 expandedNodes={expandedNodes}
               />
-            ))}
+            )) || []}
           </Box>
         </Collapse>
       </CardContent>
@@ -166,6 +166,7 @@ export const Network: React.FC = () => {
 
   const { data: networkData, isLoading, error } = useReferralNetwork(page, limit);
 
+
   const handleToggleExpand = (userId: string) => {
     const newExpanded = new Set(expandedNodes);
     if (newExpanded.has(userId)) {
@@ -177,7 +178,7 @@ export const Network: React.FC = () => {
   };
 
   const handleExpandAll = () => {
-    if (!networkData?.data?.referees) return;
+    if (!referees) return;
     
     const allIds = new Set<string>();
     const collectIds = (users: ReferralUser[]) => {
@@ -188,7 +189,7 @@ export const Network: React.FC = () => {
         }
       });
     };
-    collectIds(networkData.data.referees);
+    collectIds(referees);
     setExpandedNodes(allIds);
   };
 
@@ -197,10 +198,12 @@ export const Network: React.FC = () => {
   };
 
   // Filter referees based on search term
-  const filteredReferees = networkData?.data?.referees?.filter(user =>
+  // Backend returns data in data.data array, not data.data.referees
+  const referees = networkData?.data?.data || [];
+  const filteredReferees = referees.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.referralCode.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
   if (isLoading) {
     return (
@@ -230,7 +233,7 @@ export const Network: React.FC = () => {
     );
   }
 
-  const totalReferrals = networkData?.data?.referees?.length || 0;
+  const totalReferrals = referees.length;
   const totalPages = Math.ceil(totalReferrals / limit);
 
   return (
@@ -275,7 +278,7 @@ export const Network: React.FC = () => {
               </Avatar>
               <Box>
                 <Typography variant="h5">
-                  {networkData?.data?.referees?.filter(u => u.level === 1).length || 0}
+                  {referees.filter(u => u.level === 1).length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Level 1 (30%)
@@ -293,7 +296,7 @@ export const Network: React.FC = () => {
               </Avatar>
               <Box>
                 <Typography variant="h5">
-                  {networkData?.data?.referees?.filter(u => u.level === 2).length || 0}
+                  {referees.filter(u => u.level === 2).length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Level 2 (3%)
@@ -311,7 +314,7 @@ export const Network: React.FC = () => {
               </Avatar>
               <Box>
                 <Typography variant="h5">
-                  {networkData?.data?.referees?.filter(u => u.level === 3).length || 0}
+                  {referees.filter(u => u.level === 3).length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Level 3 (2%)
@@ -354,29 +357,27 @@ export const Network: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Your Referral Code */}
-      {networkData?.data.user && (
-        <Card sx={{ mb: 4, bgcolor: 'primary.50', border: 2, borderColor: 'primary.main' }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-                <PersonIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" color="primary.main">
-                  You ({networkData.data.user.email})
-                </Typography>
-                <Typography variant="body1">
-                  Your Referral Code: <strong>{networkData.data.user.referralCode}</strong>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Level 0 - Network Root
-                </Typography>
-              </Box>
+      {/* Your Referral Code - Backend doesn't return user object, so we'll show a generic message */}
+      <Card sx={{ mb: 4, bgcolor: 'primary.50', border: 2, borderColor: 'primary.main' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
+              <PersonIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" color="primary.main">
+                Your Referral Network
+              </Typography>
+              <Typography variant="body1">
+                Total Referrals: <strong>{totalReferrals}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Level 0 - Network Root
+              </Typography>
             </Box>
-          </CardContent>
-        </Card>
-      )}
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Network Tree */}
       <Box>

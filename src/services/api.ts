@@ -57,6 +57,7 @@ export interface User {
   name?: string;
   referralCode: string;
   hasReferrer?: boolean;
+  cashbackPercentage?: number;  // 0.1 for referred users, 0 for non-referred
 }
 
 export interface LoginRequest {
@@ -74,13 +75,13 @@ export interface RegisterRequest {
 export interface ReferralNetworkResponse {
   success: true;
   data: {
-    user: {
-      id: string;
-      email: string;
-      referralCode: string;
-      level: 0;
+    data: ReferralUser[];  // Backend returns array directly in data.data
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
     };
-    referees: ReferralUser[];
   };
 }
 
@@ -90,7 +91,9 @@ export interface ReferralUser {
   referralCode: string;
   level: 1 | 2 | 3;
   createdAt: string;
-  referees: ReferralUser[];
+  referees?: ReferralUser[];  // Optional since backend doesn't always provide nested referrals
+  totalEarnedXp?: string;     // Additional fields from backend
+  totalReferees?: number;     // Additional fields from backend
 }
 
 export interface EarningsResponse {
@@ -178,10 +181,14 @@ export const apiService = {
         try {
           const response = await apiClient.post(API_CONFIG.ENDPOINTS.GENERATE_REFERRAL_CODE);
           const referralResponse = response.data;
+          // For demo purposes, simulate cashback based on email pattern
+          // In production, this would come from the backend
+          const hasReferrer = payload.email.includes('test') || payload.email.includes('dani');
           const user = {
             id: payload.id, 
             email: payload.email,
             referralCode: referralResponse.data.referralCode,
+            cashbackPercentage: hasReferrer ? 0.1 : 0, // 10% for demo users, 0 for others
           };
           return user;
         } catch (referralError) {
